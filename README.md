@@ -1,6 +1,6 @@
 # Auto Interview Questions Generator
 
-An AI-powered tool designed to automatically generate customized interview questions based on uploaded resumes or job descriptions (JD). It utilizes the DeepSeek API to help job seekers prepare for mock interviews or assist recruiters in building question banks.
+An AI-powered tool designed to automatically generate customized interview questions based on uploaded resumes or job descriptions (JD). It utilizes the LLM API to help job seekers prepare for mock interviews or assist recruiters in building question banks.
 
 ## Tech Stack
 
@@ -8,17 +8,17 @@ This project follows a decoupled client-server architecture:
 
 ### Frontend
 * **Core:** React.js
-* **Build Tool:** Vite (Fast build times)
-* **Language:** JavaScript / JSX (Scalable to TypeScript)
+* **Build Tool:** Vite 
+* **Language:** JavaScript / JSX 
 * **Styling:** CSS / CSS Modules
 * **Package Manager:** NPM
 
 ### Backend
 * **Core:** Python 3.8+
-* **Framework:** FastAPI (High-performance web framework)
-* **Server:** Uvicorn (ASGI Server)
+* **Framework:** FastAPI 
+* **Server:** Uvicorn 
 * **AI Integration:** DeepSeek API
-* **Tools:** Python-dotenv (Environment variable management)
+* **Tools:** Python-dotenv
 
 ---
 
@@ -45,6 +45,7 @@ source .venv/bin/activate
 # 3. Install dependencies
 pip install -r requirements.txt
 
+### 2. 🔑 API Key Configuration (Crucial): Create a file named .env inside the backend directory and add your DeepSeek API Key:
 # backend/.env
 DEEPSEEK_API_KEY=your_api_key_here
 
