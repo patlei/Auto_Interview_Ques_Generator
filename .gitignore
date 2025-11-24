@@ -1,0 +1,31 @@
+# --- System Generated Files ---
+.DS_Store
+Thumbs.db
+
+# --- 🔥 Core Security Settings (Crucial) ---
+# Ignore .env files in all locations (including backend/.env)
+.env
+.env.local
+*.key
+
+# Optional: Explicitly ignore backend config for extra safety
+backend/.env
+
+# --- Python (Backend) ---
+__pycache__/
+*.pyc
+# Ignore virtual environment directories
+.venv/
+backend/.venv/
+backend/venv/
+
+# --- Node/React (Frontend) ---
+node_modules/
+frontend/node_modules/
+dist/
+build/
+.eslintcache
+
+# --- IDE Configuration ---
+.vscode/
+.idea/
