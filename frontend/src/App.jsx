@@ -1,5 +1,8 @@
 import React, { useState } from "react";
-import { Container, TextField, Button, Typography, CircularProgress } from "@mui/material";
+import { Box } from "@mui/material";
+
+import InputPanel from "./components/InputPanel";
+import ResultPanel from "./components/ResultPanel";
 
 function App() {
   const [resume, setResume] = useState(null);
@@ -9,19 +12,28 @@ function App() {
   const [loading, setLoading] = useState(false);
 
   const handleUpload = (e) => {
-    setResume(e.target.files[0]);
+    if (e.target.files && e.target.files[0]) {
+      setResume(e.target.files[0]);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setResume(null);
+    const fileInput = document.getElementById("resume-upload-input");
+    if (fileInput) fileInput.value = "";
   };
 
   const handleGenerate = async () => {
     if (!resume || !jd) {
-      alert("请上传简历并填写职位描述");
+      alert("Please upload a resume and fill in the Job Description.");
       return;
     }
 
     setLoading(true);
+    setQuestions([]);
     try {
       const formData = new FormData();
-      formData.append("cv", resume); // 后端的字段名是 cv
+      formData.append("cv", resume);
       formData.append("jd", jd);
       formData.append("interviewer_info", interviewer);
 
@@ -30,12 +42,12 @@ function App() {
         body: formData,
       });
 
-      if (!res.ok) throw new Error("请求失败");
+      if (!res.ok) throw new Error("Request failed");
 
       const data = await res.json();
       setQuestions(data.questions || []);
     } catch (err) {
-      alert("生成失败，请检查后端是否运行");
+      alert("Generation failed, please check if the backend is running.");
       console.error(err);
     } finally {
       setLoading(false);
@@ -43,59 +55,34 @@ function App() {
   };
 
   return (
-    <Container maxWidth="sm" sx={{ mt: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        面试题生成器
-      </Typography>
-
-      <Button variant="contained" component="label" sx={{ mb: 2 }}>
-        上传简历
-        <input type="file" hidden onChange={handleUpload} />
-      </Button>
-      {resume && <Typography>已选择: {resume.name}</Typography>}
-
-      <TextField
-        label="职位描述 (JD)"
-        fullWidth
-        multiline
-        rows={4}
-        value={jd}
-        onChange={(e) => setJd(e.target.value)}
-        sx={{ mb: 2, mt: 2 }}
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "row", // 依然强制左右横排
+        height: "100vh",
+        width: "100vw",
+        overflow: "hidden",
+      }}
+    >
+      {/* 1. 左侧组件: 传入输入框需要的 props */}
+      <InputPanel
+        resume={resume}
+        handleUpload={handleUpload}
+        handleRemoveFile={handleRemoveFile}
+        jd={jd}
+        setJd={setJd}
+        interviewer={interviewer}
+        setInterviewer={setInterviewer}
+        handleGenerate={handleGenerate}
+        loading={loading}
       />
 
-      <TextField
-        label="面试官信息"
-        fullWidth
-        value={interviewer}
-        onChange={(e) => setInterviewer(e.target.value)}
-        sx={{ mb: 2 }}
+      {/* 2. 右侧组件: 传入结果展示需要的 props */}
+      <ResultPanel 
+        questions={questions} 
+        loading={loading} 
       />
-
-      <Button
-        variant="contained"
-        onClick={handleGenerate}
-        disabled={loading}
-        fullWidth
-        sx={{ mb: 3 }}
-      >
-        {loading ? <CircularProgress size={24} /> : "生成面试题"}
-      </Button>
-
-      {/* 显示生成的面试题 */}
-      {questions.length > 0 && (
-        <div>
-          <Typography variant="h6" gutterBottom>
-            生成的面试题：
-          </Typography>
-          <ol>
-            {questions.map((q, index) => (
-              <li key={index}>{q}</li>
-            ))}
-          </ol>
-        </div>
-      )}
-    </Container>
+    </Box>
   );
 }
 
