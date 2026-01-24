@@ -6,10 +6,15 @@ import {
   Stack,
   Paper,
   CircularProgress,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
 import {
   KeyboardArrowRight as ArrowRightIcon,
   AutoAwesome as AutoAwesomeIcon,
+  ExpandMore as ExpandMoreIcon,
+  TipsAndUpdates as TipsIcon,
 } from "@mui/icons-material";
 
 function ResultPanel({ questions, loading }) {
@@ -58,56 +63,95 @@ function ResultPanel({ questions, loading }) {
           </Typography>
 
           <Stack spacing={2}>
-            {questions.map((q, index) => (
-              <Paper
+            {questions.map((item, index) => (
+              <Accordion
                 key={index}
                 elevation={0}
+                disableGutters
                 sx={{
-                  p: 3,
                   borderRadius: 3,
                   border: "1px solid #eef2f6",
-                  transition: "all 0.2s",
+                  overflow: "hidden",
+                  "&:before": { display: "none" }, // 去除默认分割线
                   "&:hover": {
                     boxShadow: "0 4px 20px rgba(0,0,0,0.05)",
-                    transform: "translateY(-2px)",
                     borderColor: "primary.light",
                   },
                 }}
               >
-                <Box sx={{ display: "flex", gap: 2 }}>
-                  <Box
-                    sx={{
-                      minWidth: 28,
-                      height: 28,
-                      borderRadius: "50%",
-                      bgcolor: "primary.main",
-                      color: "white",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "0.9rem",
-                      fontWeight: "bold",
-                      mt: 0.5,
-                    }}
-                  >
-                    {index + 1}
+                {/* 问题部分 */}
+                <AccordionSummary
+                  expandIcon={<ExpandMoreIcon color="primary" />}
+                  sx={{
+                    px: 3,
+                    py: 1,
+                    "&.Mui-expanded": {
+                      bgcolor: "rgba(25, 118, 210, 0.02)",
+                      borderBottom: "1px solid #f0f0f0",
+                    },
+                  }}
+                >
+                  <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
+                    <Box
+                      sx={{
+                        minWidth: 28,
+                        height: 28,
+                        borderRadius: "50%",
+                        bgcolor: "primary.main",
+                        color: "white",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "0.9rem",
+                        fontWeight: "bold",
+                        mt: 0.5,
+                      }}
+                    >
+                      {index + 1}
+                    </Box>
+                    <Typography
+                      variant="h6"
+                      fontSize="1.05rem"
+                      lineHeight={1.6}
+                      fontWeight={500}
+                    >
+                      {item.question}
+                    </Typography>
+                  </Box>
+                </AccordionSummary>
+
+                {/* 参考回答部分 */}
+                <AccordionDetails sx={{ p: 3, bgcolor: "#ffffff" }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
+                    <TipsIcon sx={{ fontSize: 18, color: "orange" }} />
+                    <Typography
+                      variant="subtitle2"
+                      fontWeight="bold"
+                      sx={{ color: "orange", letterSpacing: 0.5 }}
+                    >
+                      SUGGESTED ANSWER
+                    </Typography>
                   </Box>
                   <Typography
-                    variant="h6"
-                    fontSize="1.05rem"
-                    lineHeight={1.6}
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{
+                      lineHeight: 1.8,
+                      fontSize: "0.95rem",
+                      whiteSpace: "pre-wrap", // 保留换行格式
+                    }}
                   >
-                    {q}
+                    {item.answer}
                   </Typography>
-                </Box>
-              </Paper>
+                </AccordionDetails>
+              </Accordion>
             ))}
           </Stack>
-          {/* The Invisible Spacer (120px) */}
+          
           <Box sx={{ height: "120px", width: "100%" }} />
         </Box>
       ) : (
-        // Case B: Empty State
+        // Case B: Empty State (保持不变，仅更新 loading 提示)
         <Box
           sx={{
             textAlign: "center",
@@ -119,10 +163,10 @@ function ResultPanel({ questions, loading }) {
             <Box>
               <CircularProgress size={60} thickness={4} sx={{ mb: 3 }} />
               <Typography variant="h5" fontWeight="bold" color="text.primary">
-                AI is analyzing deeply...
+                AI is generating QA...
               </Typography>
               <Typography sx={{ mt: 1 }}>
-                Reading resume and matching with JD to generate questions...
+                Synthesizing model answers based on your experience...
               </Typography>
             </Box>
           ) : (
@@ -154,7 +198,7 @@ function ResultPanel({ questions, loading }) {
               </Typography>
               <Typography variant="body1" color="text.disabled">
                 Upload resume and fill JD on the left<br />
-                AI will generate customized questions
+                AI will generate questions & answers
               </Typography>
             </Box>
           )}
