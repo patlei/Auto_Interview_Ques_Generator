@@ -72,7 +72,7 @@ function ResultPanel({ questions, loading }) {
                   borderRadius: 3,
                   border: "1px solid #eef2f6",
                   overflow: "hidden",
-                  "&:before": { display: "none" }, // 去除默认分割线
+                  "&:before": { display: "none" }, 
                   "&:hover": {
                     boxShadow: "0 4px 20px rgba(0,0,0,0.05)",
                     borderColor: "primary.light",
@@ -138,7 +138,7 @@ function ResultPanel({ questions, loading }) {
                     sx={{
                       lineHeight: 1.8,
                       fontSize: "0.95rem",
-                      whiteSpace: "pre-wrap", // 保留换行格式
+                      whiteSpace: "pre-wrap", 
                     }}
                   >
                     {item.answer}

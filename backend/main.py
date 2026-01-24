@@ -80,19 +80,15 @@ async def generate_questions(
     except Exception as e:
         print(f"Standard JSON Parse failed: {e}. Attempting Regex recovery...")
         
-        # 【核心修复】：使用正则表达式从残缺的文本中提取已经生成的完整 QA 对
-        # 这个正则会匹配 {"question": "...", "answer": "..."} 结构，即使 JSON 没写完也能抓取前面的
         qa_pattern = r'\{\s*"question":\s*"(.*?)",\s*"answer":\s*"(.*?)"\s*\}'
         matches = re.findall(qa_pattern, clean_content, re.DOTALL)
         
         if matches:
             questions_data = [{"question": m[0].strip(), "answer": m[1].strip()} for m in matches]
         else:
-            # 最后的兜底：如果连正则都抓不到，再尝试按行切分纯文本
             lines = [l.strip() for l in clean_content.split('\n') if len(l.strip()) > 10 and '{' not in l]
             questions_data = [{"question": line, "answer": "内容生成过长被截断，建议缩短输入信息。"} for line in lines[:10]]
 
-    # 6. 返回结果
     return JSONResponse(content={"questions": questions_data})
 
 if __name__ == "__main__":
