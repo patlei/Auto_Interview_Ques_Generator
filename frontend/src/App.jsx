@@ -9,6 +9,9 @@ function App() {
   const [jd, setJd] = useState("");
   const [interviewer, setInterviewer] = useState("");
   const [questions, setQuestions] = useState([]);
+  
+  // NEW: State to store the CV Match Report data
+  const [matchReport, setMatchReport] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const handleUpload = (e) => {
@@ -24,34 +27,20 @@ function App() {
   };
 
   /**
-   * 核心修复逻辑：强力解析后端数据
-   * 无论后端传过来的是 String, 嵌套 String 还是 Object，都统一转为对象数组
+   * Helper function to handle potential stringified JSON issues
+   * (Ensures the data is a proper object/array)
    */
-  const parseQuestionsData = (data) => {
+  const deepParse = (data) => {
     let result = data;
-
-    // 1. 如果数据是字符串，尝试解析 JSON
     if (typeof result === 'string') {
       try {
         const cleanJson = result.replace(/```json|```/g, "").trim();
         result = JSON.parse(cleanJson);
       } catch (e) {
-        console.error("String parse error:", e);
-        return [];
+        console.error("Deep parse error:", e);
       }
     }
-
-    // 2. 解决你遇到的问题：数组第一个元素是整串 JSON 字符串
-    if (Array.isArray(result) && result.length === 1 && typeof result[0] === 'string') {
-      try {
-        result = JSON.parse(result[0]);
-      } catch (e) {
-        console.error("Nested string parse error:", e);
-      }
-    }
-
-    // 3. 确保返回的是数组
-    return Array.isArray(result) ? result : [];
+    return result;
   };
 
   const handleGenerate = async () => {
@@ -62,6 +51,7 @@ function App() {
 
     setLoading(true);
     setQuestions([]);
+    setMatchReport(null); // Reset previous report
     
     try {
       const formData = new FormData();
@@ -78,29 +68,32 @@ function App() {
 
       const data = await res.json();
       
-      let rawData = data.questions;
+      // Handle the nested structure: data.questions and data.match_report
+      let rawQuestions = data.questions;
+      let rawReport = data.match_report;
 
-      // 如果 rawData 是字符串，或者是嵌套在数组里的字符串，进行循环解析
-      while (typeof rawData === 'string' || (Array.isArray(rawData) && rawData.length === 1 && typeof rawData[0] === 'string')) {
+      // Recursive cleanup for questions if AI returns them as stringified JSON
+      while (typeof rawQuestions === 'string' || (Array.isArray(rawQuestions) && rawQuestions.length === 1 && typeof rawQuestions[0] === 'string')) {
         try {
-          const target = Array.isArray(rawData) ? rawData[0] : rawData;
-          // 清理可能存在的 Markdown 标签
+          const target = Array.isArray(rawQuestions) ? rawQuestions[0] : rawQuestions;
           const cleanJson = target.replace(/```json|```/g, "").trim();
           const parsed = JSON.parse(cleanJson);
-          
-          // 如果解析后的结果和之前一样（死循环保护），则跳出
-          if (JSON.stringify(parsed) === JSON.stringify(rawData)) break;
-          rawData = parsed;
+          if (JSON.stringify(parsed) === JSON.stringify(rawQuestions)) break;
+          rawQuestions = parsed;
         } catch (e) {
-          console.error("解析失败:", e);
+          console.error("Analyze failed during recursive parse:", e);
           break;
         }
       }
 
-      // 确保最终一定是数组
-      const finalQuestions = Array.isArray(rawData) ? rawData : [];
-      console.log("最终解析出的数据：", finalQuestions);
+      // Update states with processed data
+      const finalQuestions = Array.isArray(rawQuestions) ? rawQuestions : [];
       setQuestions(finalQuestions);
+      
+      // Parse report if it's a string, otherwise use directly
+      setMatchReport(deepParse(rawReport));
+      
+      console.log("Analysis Complete:", { report: rawReport, questions: finalQuestions });
       
     } catch (err) {
       alert("Generation failed, please check if the backend is running.");
@@ -134,6 +127,7 @@ function App() {
 
       <ResultPanel 
         questions={questions} 
+        matchReport={matchReport} // Pass the report to ResultPanel
         loading={loading} 
       />
     </Box>

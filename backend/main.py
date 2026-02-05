@@ -8,7 +8,7 @@ import re
 
 app = FastAPI()
 
-# CORS 配置
+# CORS Configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  
@@ -23,43 +23,65 @@ async def generate_questions(
     jd: str = Form(...),
     interviewer_info: str = Form("")
 ):
-    # 1. 解析简历文本
+    # 1. Analyze CV to extract text content
     try:
         cv_text = await extract_cv_text(cv)
     except Exception as e:
         return JSONResponse(status_code=400, content={"detail": f"Resume parsing failed: {str(e)}"})
 
-    # 2. 构造自适应 Prompt
-    # 核心修改：增加了长度约束和更严谨的 JSON 指令，防止截断
+    # 2. Create a comprehensive prompt with Scoring Criteria and Workflow
+    # Logic: Evaluation against Criteria -> Report Generation -> Question Design
     prompt = f"""
-    # ROLE IDENTIFICATION
-    - Identify the professional field from JD and CV.
-    - Act as a senior expert (10+ years exp) in that field.
+    # ROLE
+    Act as an elite Technical Recruiter and Senior Interviewer.
 
     # CONTEXT
-    - **JD**: {jd}
-    - **CV**: {cv_text}
-    - **Extra Info**: {interviewer_info}
+    - **Job Description (JD)**: {jd}
+    - **Candidate Resume (CV)**: {cv_text}
+    - **Interviewer Preferences**: {interviewer_info}
 
-    # PRIMARY TASK
-    Generate exactly 10 high-quality interview questions and reference answers.
+    # SCORING CRITERIA (Use this to calculate overall_score)
+    - 90-100: Perfect match. Candidate possesses all "must-have" and most "preferred" skills.
+    - 75-89: Strong match. Meets all core requirements but lacks some minor bonus qualifications.
+    - 50-74: Fair match. Meets basic technical requirements but has significant experience gaps or missing secondary skills.
+    - 0-49: Poor match. Fundamental skills or years of experience do not align with the role.
+
+    # WORKFLOW
+    1. **JD ANALYSIS**: Extract mandatory technical stacks, years of experience, and soft skill requirements.
+    2. **CV COMPARISON**: Map the candidate's projects and skills directly against the JD. Identify "Strengths" (Exact matches) and "Gaps" (Missing/Weak areas).
+    3. **QUANTITATIVE SCORING**: Assign an 'overall_score' based on the SCORING CRITERIA above.
+    4. **CONTENT GENERATION**:
+        - Generate a concise summary of the fit.
+        - Create 10 professional, high-impact interview questions targeting the candidate's gaps and strengths.
 
     # CRITICAL INSTRUCTIONS
-    1. **Language**: Match the language of the JD/CV.
-    2. **Length Control (IMPORTANT)**: Each "answer" must be concise and under 150 words. Do not be overly verbose to avoid response truncation.
-    3. **JSON Reliability**: Output ONLY a valid JSON array. Do not include markdown tags like ```json.
+    1. **Language**: Always respond in the language used in the JD/CV.
+    2. **Formatting**: Output ONLY a valid JSON object. No Markdown tags like ```json.
+    3. **Conciseness**: Suggested answers must be within 150 words.
+    4. **Realism**: The 'overall_score' must be a dynamic calculation based on JD/CV, not a placeholder.
 
-    # OUTPUT FORMAT
-    [
-      {{"question": "Question text", "answer": "Concise reference answer"}},
-      ...
-    ]
+    # OUTPUT STRUCTURE (Strict JSON)
+    {{
+      "match_report": {{
+        "overall_score": [Calculate based on criteria],
+        "strengths": ["string", "string"],
+        "gaps": ["string", "string"],
+        "summary": "Professional fit summary (2-3 sentences)."
+      }},
+      "questions": [
+        {{
+          "question": "Tailored question based on CV/JD...",
+          "intent": "Why this specific question is asked...",
+          "answer": "Professional reference answer..."
+        }}
+      ]
+    }}
     """
 
-    # 3. 调用 DeepSeek API
+    # 3. Call DeepSeek API
     deepseek_response = call_deepseek(prompt)
 
-    # 4. 提取 API 返回内容
+    # 4. Extract content from response
     if isinstance(deepseek_response, dict):
         try:
             content = deepseek_response["choices"][0]["message"]["content"]
@@ -68,28 +90,51 @@ async def generate_questions(
     else:
         content = str(deepseek_response)
 
-    # 5. 强力解析逻辑 (针对截断和格式错误优化)
-    questions_data = []
-    
-    # 预清洗：去掉可能存在的 Markdown 标签
+    # 5. Robust parsing logic for nested structure
+    # Standard cleanup for potential AI formatting issues
     clean_content = re.sub(r'^```[a-z]*\n|^```|```$', '', content.strip(), flags=re.MULTILINE).strip()
 
     try:
-        # 尝试标准 JSON 解析
-        questions_data = json.loads(clean_content)
+        # Primary attempt: Full JSON parsing
+        data = json.loads(clean_content)
+        match_report = data.get("match_report", {
+            "overall_score": "N/A", 
+            "strengths": [], 
+            "gaps": [], 
+            "summary": "Analysis generated but report structure was invalid."
+        })
+        questions_data = data.get("questions", [])
     except Exception as e:
-        print(f"Standard JSON Parse failed: {e}. Attempting Regex recovery...")
+        print(f"JSON Parse failed: {e}. Attempting Regex recovery for questions...")
         
-        qa_pattern = r'\{\s*"question":\s*"(.*?)",\s*"answer":\s*"(.*?)"\s*\}'
+        # Fallback report for UI stability
+        match_report = {
+            "overall_score": 0,
+            "strengths": ["Error parsing strengths"],
+            "gaps": ["Error parsing gaps"],
+            "summary": "Formatting error: The AI's response couldn't be fully parsed into JSON."
+        }
+        
+        # Regex recovery specifically for the questions array
+        qa_pattern = r'\{\s*"question":\s*"(.*?)",\s*"intent":\s*"(.*?)",\s*"answer":\s*"(.*?)"\s*\}'
         matches = re.findall(qa_pattern, clean_content, re.DOTALL)
         
         if matches:
-            questions_data = [{"question": m[0].strip(), "answer": m[1].strip()} for m in matches]
+            questions_data = [
+                {
+                    "question": m[0].replace('\\"', '"').strip(), 
+                    "intent": m[1].replace('\\"', '"').strip(), 
+                    "answer": m[2].replace('\\"', '"').strip()
+                } for m in matches
+            ]
         else:
-            lines = [l.strip() for l in clean_content.split('\n') if len(l.strip()) > 10 and '{' not in l]
-            questions_data = [{"question": line, "answer": "内容生成过长被截断，建议缩短输入信息。"} for line in lines[:10]]
+            questions_data = []
 
-    return JSONResponse(content={"questions": questions_data})
+    # 6. Final response construction
+    return JSONResponse(content={
+        "match_report": match_report,
+        "questions": questions_data
+    })
 
 if __name__ == "__main__":
     import uvicorn
