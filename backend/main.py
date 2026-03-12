@@ -9,20 +9,20 @@ import os
 
 app = FastAPI()
 
-# 2. 定义允许访问后端的白名单
+
 origins = [
-    "http://localhost:5173",          # 本地开发环境
-    "http://127.0.0.1:5173",         # 本地开发环境
-    "https://auto-interview-ques-generator.vercel.app"
+    "http://localhost:5173",         
+    "http://127.0.0.1:5173",         
+    "https://auto-interview-ques-generator.vercel.app" 
 ]
 
 # CORS Configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],             # 允许跨域的列表
+    allow_origins=origins,           
     allow_credentials=True,
-    allow_methods=["*"],               # 允许所有 HTTP 方法 (GET, POST 等)
-    allow_headers=["*"],               # 允许所有请求头
+    allow_methods=["*"],               
+    allow_headers=["*"],               
 )
 
 
