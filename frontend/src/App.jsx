@@ -121,7 +121,7 @@ function App() {
       formData.append('interviewer_info', interviewer);
       
       //uodated backend URL
-      const res = await fetch('http://joyful-renewal-production-2d81.up.railway.app/generate_questions', {
+      const res = await fetch('https://joyful-renewal-production-2d81.up.railway.app/generate_questions', {
         method: 'POST',
         body: formData,
       });
