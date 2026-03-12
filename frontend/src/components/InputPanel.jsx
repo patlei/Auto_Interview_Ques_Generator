@@ -5,22 +5,13 @@ import {
   Stack,
   Button,
   Paper,
-  Tooltip,
   IconButton,
   TextField,
-  InputAdornment,
   CircularProgress,
+  useTheme,
 } from "@mui/material";
-import {
-  AutoAwesome as AutoAwesomeIcon,
-  CloudUpload as CloudUploadIcon,
-  InsertDriveFile as FileIcon,
-  Download as DownloadIcon,
-  DeleteOutline as DeleteIcon,
-  Description as DescriptionIcon,
-  Person as PersonIcon,
-} from "@mui/icons-material";
-
+import { Sparkles, UploadCloud, FileText, Trash2 } from 'lucide-react';
+import { useLanguageContext } from "../contexts/LanguageContext";
 
 function InputPanel({
   resume,
@@ -33,40 +24,56 @@ function InputPanel({
   handleGenerate,
   loading,
 }) {
+  const { t } = useLanguageContext();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+
+  // 统一样式：输入框背景色和圆角
+  const textFieldStyle = {
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 3,
+      bgcolor: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.01)",
+      fontSize: '0.9rem',
+      "& fieldset": {
+        borderColor: "divider",
+      },
+    },
+  };
+
   return (
     <Box
       sx={{
         width: "35%",
         minWidth: "400px",
         height: "100%",
-        bgcolor: "#ffffff",
-        borderRight: "1px solid #e0e0e0",
+        bgcolor: "background.paper", 
+        borderRight: `1px solid ${theme.palette.divider}`,
         display: "flex",
         flexDirection: "column",
         p: 4,
         overflowY: "auto",
-        boxShadow: "4px 0 24px rgba(0,0,0,0.02)",
         zIndex: 2,
+        transition: 'all 0.3s ease',
       }}
     >
       {/* Header */}
       <Box sx={{ mb: 5, display: "flex", alignItems: "center", gap: 1.5 }}>
         <Box
           sx={{
-            bgcolor: "primary.main",
-            color: "white",
+            bgcolor: "text.primary",
+            color: "background.paper",
             p: 1,
             borderRadius: 2,
             display: "flex",
           }}
         >
-          <AutoAwesomeIcon fontSize="medium" />
+          <Sparkles size={20} />
         </Box>
         <Box>
-          <Typography variant="h5" fontWeight="800" color="#1a1a1a">
-            Interview Generator
+          <Typography variant="h6" fontWeight="800" color="text.primary" sx={{ letterSpacing: '-0.5px' }}>
+            {t.brandName || "InteviewApe"}
           </Typography>
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
             AI-Powered Tool
           </Typography>
         </Box>
@@ -74,10 +81,10 @@ function InputPanel({
 
       {/* Form Inputs */}
       <Stack spacing={4}>
-        {/* A. Resume Upload */}
+        {/* 1. Resume Upload */}
         <Box>
-          <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
-            1. Upload Resume (Resume/CV)
+          <Typography variant="subtitle2" fontWeight="800" color="text.primary" sx={{ mb: 1.5, fontSize: '0.9rem' }}>
+            {t.step1 || "1. Upload Resume (Resume/CV)"}
           </Typography>
           {!resume ? (
             <Button
@@ -85,32 +92,26 @@ function InputPanel({
               variant="outlined"
               fullWidth
               sx={{
-                height: 100,
+                height: 110,
                 borderStyle: "dashed",
-                borderWidth: 2,
-                borderColor: "grey.300",
-                bgcolor: "grey.50",
+                borderWidth: 1.5,
+                borderColor: "divider",
+                bgcolor: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.02)",
                 borderRadius: 3,
                 display: "flex",
                 flexDirection: "column",
                 textTransform: "none",
                 "&:hover": {
-                  borderColor: "primary.main",
-                  bgcolor: "primary.50",
+                  borderColor: "text.primary",
+                  bgcolor: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)",
                 },
               }}
             >
-              <CloudUploadIcon color="primary" sx={{ fontSize: 32, mb: 0.5 }} />
-              <Typography variant="body2" color="text.secondary">
-                Click to upload file (PDF/Word)
+              <UploadCloud size={24} strokeWidth={1.5} style={{ marginBottom: '8px', color: theme.palette.text.secondary }} />
+              <Typography variant="body2" color="text.secondary" fontWeight="500">
+                {t.clickToUpload}
               </Typography>
-              <input
-                id="resume-upload-input"
-                type="file"
-                hidden
-                onChange={handleUpload}
-                accept=".pdf,.docx,.doc,.txt"
-              />
+              <input type="file" hidden onChange={handleUpload} accept=".pdf,.docx,.doc,.txt" />
             </Button>
           ) : (
             <Paper
@@ -120,96 +121,58 @@ function InputPanel({
                 borderRadius: 3,
                 display: "flex",
                 alignItems: "center",
-                bgcolor: "primary.50",
-                borderColor: "primary.main",
+                bgcolor: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.02)",
+                borderColor: "divider",
               }}
             >
-              <FileIcon color="primary" sx={{ mr: 1.5 }} />
+              <FileText size={20} style={{ marginRight: '12px' }} />
               <Box sx={{ flexGrow: 1, overflow: "hidden", mr: 1 }}>
-                <Typography variant="subtitle2" fontWeight="bold" noWrap>
+                <Typography variant="subtitle2" fontWeight="700" noWrap>
                   {resume.name}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
                   {(resume.size / 1024).toFixed(1)} KB
                 </Typography>
               </Box>
-              <Tooltip title="Preview">
-                <IconButton
-                  size="small"
-                  href={URL.createObjectURL(resume)}
-                  target="_blank"
-                >
-                  <DownloadIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Delete">
-                <IconButton
-                  size="small"
-                  onClick={handleRemoveFile}
-                  color="error"
-                >
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
+              <IconButton size="small" onClick={handleRemoveFile} color="error">
+                <Trash2 size={16} />
+              </IconButton>
             </Paper>
           )}
         </Box>
 
-        {/* B. JD Input */}
+        {/* 2. JD Input */}
         <Box>
-          <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
-            2. Job Description (JD)
+          <Typography variant="subtitle2" fontWeight="800" color="text.primary" sx={{ mb: 1.5, fontSize: '0.9rem' }}>
+            {t.step2 || "2. Job Description (JD)"}
           </Typography>
           <TextField
-            placeholder="Paste the JD content here..."
+            placeholder={t.jdPlaceholder || "Paste the JD content here..."}
             fullWidth
             multiline
             minRows={6}
-            maxRows={12}
+            maxRows={10}
             value={jd}
             onChange={(e) => setJd(e.target.value)}
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                borderRadius: 3,
-                bgcolor: "#fafafa",
-              },
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start" sx={{ mt: 1 }}>
-                  <DescriptionIcon color="action" fontSize="small" />
-                </InputAdornment>
-              ),
-            }}
+            sx={textFieldStyle}
           />
         </Box>
 
-        {/* C. Interviewer Info */}
+        {/* 3. Interviewer Info */}
         <Box>
-          <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
-            3. Interviewer Preferences (Optional)
+          <Typography variant="subtitle2" fontWeight="800" color="text.primary" sx={{ mb: 1.5, fontSize: '0.9rem' }}>
+            {t.step3 || "3. Interviewer Preferences (Optional)"}
           </Typography>
           <TextField
-            placeholder="E.g., CTO, focuses on system design"
+            placeholder={t.prefPlaceholder || "E.g., CTO, focuses on system design"}
             fullWidth
             value={interviewer}
             onChange={(e) => setInterviewer(e.target.value)}
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                borderRadius: 3,
-                bgcolor: "#fafafa",
-              },
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <PersonIcon color="action" fontSize="small" />
-                </InputAdornment>
-              ),
-            }}
+            sx={textFieldStyle}
           />
         </Box>
 
+        {/* Action Button */}
         <Button
           variant="contained"
           size="large"
@@ -218,18 +181,24 @@ function InputPanel({
           sx={{
             py: 2,
             borderRadius: 3,
-            fontWeight: "bold",
-            fontSize: "1.1rem",
-            boxShadow: "0 8px 20px rgba(25, 118, 210, 0.25)",
+            fontWeight: "800",
+            fontSize: "1rem",
+            letterSpacing: '0.5px',
+            bgcolor: "text.primary",
+            color: "background.paper",
+            boxShadow: isDark ? 'none' : '0 10px 20px rgba(0,0,0,0.1)',
+            "&:hover": {
+              bgcolor: isDark ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.85)",
+              transform: 'translateY(-1px)',
+            },
+            transition: 'all 0.2s',
             mt: 2,
           }}
         >
           {loading ? (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <CircularProgress size={20} color="inherit" /> Generating...
-            </Box>
+            <CircularProgress size={24} color="inherit" />
           ) : (
-            "✨ Generate Questions"
+            `✨ ${t.generateQuestions || "GENERATE QUESTIONS"}`
           )}
         </Button>
       </Stack>
