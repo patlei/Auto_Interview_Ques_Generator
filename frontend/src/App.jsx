@@ -119,11 +119,13 @@ function App() {
       formData.append('cv', resume);
       formData.append('jd', jd);
       formData.append('interviewer_info', interviewer);
-
-      const res = await fetch('http://127.0.0.1:8000/generate_questions', {
+      
+      //uodated backend URL
+      const res = await fetch('http://joyful-renewal-production-2d81.up.railway.app/generate_questions', {
         method: 'POST',
         body: formData,
       });
+
 
       if (!res.ok) throw new Error('Backend server error');
       const data = await res.json();
