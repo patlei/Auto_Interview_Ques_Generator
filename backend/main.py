@@ -12,7 +12,7 @@ app = FastAPI()
 origins = [
     "http://localhost:5173",          # 本地开发环境
     "http://127.0.0.1:5173",         # 本地开发环境
-    "https://autointerviewquesgenerator01.vercel.app"
+    "https://auto-interview-ques-generator.vercel.app"
 ]
 
 # CORS Configuration
