@@ -1,41 +1,87 @@
-import React, { useState } from 'react';
-import { Box } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, CircularProgress } from '@mui/material';
+import { supabase } from './supabaseClient'; 
 
 import Navbar from './components/Navbar';
 import AuthPage from './components/AuthPage';
 import InputPanel from './components/InputPanel';
 import ResultPanel from './components/ResultPanel';
+import Dashboard from './components/Dashboard'; // 确保你已经创建了这个文件
 import { useLanguageContext } from './contexts/LanguageContext';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userData, setUserData] = useState(null);
+  const [user, setUser] = useState(null);
+  const [loadingSession, setLoadingSession] = useState(true); 
+  
+  // --- 核心：控制当前显示的页面 ---
+  // 'main' 代表生成/结果页
+  // 'dashboard' 代表保存的报告列表页
+  // 'view' 代表独立的历史报告查看详情页（全屏模式）
+  const [currentView, setCurrentView] = useState('main'); 
+
+  // 新增：专门用于存储从控制台点击选中的那份历史报告
+  const [selectedReport, setSelectedReport] = useState(null);
+
+  // 业务状态（用于 main 视图下的即时生成）
   const [resume, setResume] = useState(null);
   const [jd, setJd] = useState('');
   const [interviewer, setInterviewer] = useState('');
   const [questions, setQuestions] = useState([]);
   const [matchReport, setMatchReport] = useState(null);
   const [loading, setLoading] = useState(false);
-  const { t } = useLanguageContext();
+  
+  const { t, isEnglish } = useLanguageContext();
 
-  const handleLoginSuccess = (data) => {
-    setUserData(data);
+  // 监听 Supabase 身份验证状态
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setUser(session.user);
+        setIsAuthenticated(true);
+      }
+      setLoadingSession(false);
+    };
+
+    checkSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setUser(session.user);
+        setIsAuthenticated(true);
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
+        setCurrentView('main'); // 登出时重置视图
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLoginSuccess = (userData) => {
+    setUser(userData);
     setIsAuthenticated(true);
   };
 
-  const handleRegisterSuccess = (data) => {
-    setUserData(data);
-    setIsAuthenticated(true);
-  };
-
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    setUserData(null);
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    // 清除所有业务状态
     setResume(null);
     setJd('');
     setInterviewer('');
     setQuestions([]);
     setMatchReport(null);
+    setSelectedReport(null);
+  };
+
+  // --- 处理从 Dashboard 选中某个历史记录 ---
+  const handleSelectHistoryReport = (report) => {
+    // 1. 将选中的报告存入专门的查看状态
+    setSelectedReport(report);
+    // 2. 跳转到独立的详情查看视图，而不是返回 main 视图
+    setCurrentView('view'); 
   };
 
   const handleUpload = (e) => {
@@ -50,17 +96,14 @@ function App() {
     if (fileInput) fileInput.value = '';
   };
 
-  // --- 增强版解析逻辑：解决 AI 返回 Markdown 标签导致的解析失败 ---
   const safeParse = (data) => {
     if (!data) return null;
     if (typeof data === 'object') return data;
-    
     try {
-      // 移除可能存在的 Markdown 代码块标签
       const cleanJson = data.replace(/```json|```/g, '').trim();
       return JSON.parse(cleanJson);
     } catch (e) {
-      console.error('Parse Error:', e, 'Raw data:', data);
+      console.error('Parse Error:', e);
       return null;
     }
   };
@@ -70,13 +113,9 @@ function App() {
       alert(t.fillLeftPanel || 'Please upload resume and JD');
       return;
     }
-
     setLoading(true);
-    // 注意：不要在这里清空上一次的结果，保持界面稳定直到新结果出来
-    
     try {
       const formData = new FormData();
-      // 这里确保 key 名与后端 FastAPI 接收的一致（cv / jd / interviewer_info）
       formData.append('cv', resume);
       formData.append('jd', jd);
       formData.append('interviewer_info', interviewer);
@@ -87,79 +126,93 @@ function App() {
       });
 
       if (!res.ok) throw new Error('Backend server error');
-
       const data = await res.json();
-      console.log('Backend Response:', data);
-
-      // 解析 questions
+      
       const parsedQuestions = safeParse(data.questions);
-      // 解析 match_report
       const parsedReport = safeParse(data.match_report);
 
-      // 更新状态：确保 questions 永远是数组
       setQuestions(Array.isArray(parsedQuestions) ? parsedQuestions : []);
       setMatchReport(parsedReport);
-
+      // 确保生成后停留在 main 视图
+      setCurrentView('main');
     } catch (err) {
       console.error(err);
-      alert(isEnglish ? 'Generation failed. Is the backend running?' : '生成失败，请检查后端服务是否启动。');
+      alert(isEnglish ? 'Generation failed.' : '生成失败，请检查后端。');
     } finally {
       setLoading(false);
     }
   };
 
-  // 1. 未登录界面
-  if (!isAuthenticated) {
+  if (loadingSession) {
     return (
-      <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-        <Navbar 
-          isAuthenticated={isAuthenticated} 
-          onLogout={handleLogout} 
-        />
-        <AuthPage
-          onLoginSuccess={handleLoginSuccess}
-          onRegisterSuccess={handleRegisterSuccess}
-        />
+      <Box sx={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
+        <CircularProgress size={40} thickness={4} color="inherit" />
       </Box>
     );
   }
 
-  // 2. 登录后的主界面 (Dashboard)
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       <Navbar
         isAuthenticated={isAuthenticated}
         onLogout={handleLogout}
-        onDashboard={() => {}} 
+        // Navbar 点击联动
+        onDashboardClick={() => setCurrentView('dashboard')} 
+        onLogoClick={() => setCurrentView('main')}
+        currentView={currentView}
       />
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'row',
-          height: 'calc(100vh - 64px)', // 减去 Navbar 高度
-          width: '100vw',
-          overflow: 'hidden',
-          pt: '64px', // 顶部对齐
-        }}
-      >
-        <InputPanel
-          resume={resume}
-          handleUpload={handleUpload}
-          handleRemoveFile={handleRemoveFile}
-          jd={jd}
-          setJd={setJd}
-          interviewer={interviewer}
-          setInterviewer={setInterviewer}
-          handleGenerate={handleGenerate}
-          loading={loading}
+      
+      {!isAuthenticated ? (
+        <AuthPage
+          onLoginSuccess={handleLoginSuccess}
+          onRegisterSuccess={handleLoginSuccess}
         />
+      ) : (
+        <Box sx={{ pt: '64px', height: '100vh' }}>
+          
+          {/* 1. 分析模式 (Main)：左侧输入 + 右侧即时结果 */}
+          {currentView === 'main' && (
+            <Box sx={{ display: 'flex', flexDirection: 'row', height: '100%', overflow: 'hidden' }}>
+              <InputPanel
+                resume={resume}
+                handleUpload={handleUpload}
+                handleRemoveFile={handleRemoveFile}
+                jd={jd}
+                setJd={setJd}
+                interviewer={interviewer}
+                setInterviewer={setInterviewer}
+                handleGenerate={handleGenerate}
+                loading={loading}
+              />
+              <ResultPanel
+                questions={questions}
+                matchReport={matchReport}
+                loading={loading}
+              />
+            </Box>
+          )}
 
-        <ResultPanel
-          questions={questions}
-          matchReport={matchReport}
-          loading={loading}
-        />
-      </Box>
+          {/* 2. 控制台列表模式 (Dashboard) */}
+          {currentView === 'dashboard' && (
+            <Dashboard onSelectReport={handleSelectHistoryReport} />
+          )}
+
+          {/* 3. 独立查看模式 (View)：全屏展示历史内容，不显示左侧 InputPanel */}
+          {currentView === 'view' && selectedReport && (
+            <Box sx={{ height: '100%', overflow: 'hidden' }}>
+              <ResultPanel
+                questions={selectedReport.questions}
+                matchReport={selectedReport.match_report}
+                loading={false}
+                // 关键点：开启只读模式
+                isReadOnly={true} 
+                // 关键点：绑定左上角返回按钮的功能
+                onBack={() => setCurrentView('dashboard')} 
+              />
+            </Box>
+          )}
+        </Box>
+      )}
     </Box>
   );
 }
