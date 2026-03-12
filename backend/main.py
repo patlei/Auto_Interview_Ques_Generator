@@ -12,7 +12,6 @@ app = FastAPI()
 origins = [
     "http://localhost:5173",          # 本地开发环境
     "http://127.0.0.1:5173",         # 本地开发环境
-    "https://你的项目名称.vercel.app",   # 你的 Vercel 线上域名
     "https://autointerviewquesgenerator01.vercel.app"
 ]
 
