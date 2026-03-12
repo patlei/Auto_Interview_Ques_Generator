@@ -57,23 +57,3 @@ npm install
 
 # Start the development server
 npm run dev
-
-
-AutoInterview/
-├── backend/                # Python Backend
-│   ├── .venv/              # Virtual Environment (Ignored by Git)
-│   ├── __pycache__/        # Python Cache
-│   ├── .env                # Config file (Contains API Key - Ignored)
-│   ├── deepseek.py         # AI Interaction Logic
-│   ├── main.py             # FastAPI Entry Point & Routes
-│   ├── requirements.txt    # Python Dependencies
-│   └── resume_parser.py    # Resume Parsing Logic
-│
-├── frontend/               # React Frontend
-│   ├── node_modules/       # Node Dependencies (Ignored by Git)
-│   ├── src/                # Source Code
-│   ├── package.json        # NPM Configuration
-│   └── vite.config.js      # Vite Configuration
-│
-├── .gitignore              # Git Ignore Rules
-└── README.md               # Project Documentation
