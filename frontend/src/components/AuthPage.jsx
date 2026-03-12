@@ -13,12 +13,12 @@ import {
   Tab,
   useTheme,
 } from "@mui/material";
-// 替换为 Lucide 图标
 import { User, Mail, Lock, Eye, EyeOff, FileText, Bot } from 'lucide-react';
-// 引入语言 Hook
 import { useLanguageContext } from '../contexts/LanguageContext';
+// 1. 引入刚才配置好的 supabase 客户端
+import { supabase } from '../supabaseClient';
 
-// 右侧 AI 动态背景面板
+// 右侧 AI 动态背景面板 (保持原样)
 const AiBackgroundPanel = ({ t }) => {
   const theme = useTheme();
   return (
@@ -27,7 +27,7 @@ const AiBackgroundPanel = ({ t }) => {
         width: "50%",
         height: "100%",
         position: "relative",
-        display: { xs: 'none', md: 'flex' }, // 移动端隐藏右侧
+        display: { xs: 'none', md: 'flex' },
         background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, rgba(0,0,0,0.95) 100%)`,
         color: "white",
         flexDirection: "column",
@@ -63,58 +63,43 @@ const AiBackgroundPanel = ({ t }) => {
             WebkitTextFillColor: 'transparent',
           }}
         >
-          {t.brandName}
+          InteviewApe
         </Typography>
         <Typography variant="body1" sx={{ color: "rgba(255,255,255,0.7)", maxWidth: "400px", fontWeight: 400 }}>
-          {t.agentDescription}
+          {t.agentDescription || "Your professional AI-powered interview preparation assistant."}
         </Typography>
       </Stack>
       
       <Box sx={{ position: "absolute", bottom: 16, left: 16, display: "flex", alignItems: "center", gap: 1 }}>
          <Bot size={16} color="rgba(255,255,255,0.4)" />
          <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.4)" }}>
-           {t.copyright}
+           {t.copyright || "© 2026 InteviewApe AI Lab"}
          </Typography>
       </Box>
     </Box>
   );
 };
 
-// 极简输入框样式
 const minimalFieldStyle = {
   "& .MuiOutlinedInput-root": {
     borderRadius: "10px",
     bgcolor: "background.paper",
-    "& fieldset": {
-      borderColor: "rgba(0,0,0,0.08)",
-      borderWidth: '1px',
-    },
-    "&:hover fieldset": {
-      borderColor: "rgba(0,0,0,0.15)",
-    },
-    "&.Mui-focused fieldset": {
-      borderWidth: '1px',
-    },
-  },
-  "& .MuiInputLabel-root": {
-    color: "text.secondary",
-    fontWeight: 400,
+    "& fieldset": { borderColor: "rgba(0,0,0,0.08)", borderWidth: '1px' },
+    "&:hover fieldset": { borderColor: "rgba(0,0,0,0.15)" },
   },
 };
 
-// 极简按钮样式
 const minimalButtonStyle = {
   py: 1.8,
   borderRadius: "10px",
   fontWeight: 600,
   textTransform: 'none',
   fontSize: '0.95rem',
-  letterSpacing: '0.5px',
 };
 
 function AuthPage({ onRegisterSuccess, onLoginSuccess }) {
   const theme = useTheme();
-  const { t } = useLanguageContext(); // 获取当前的词库对象
+  const { t } = useLanguageContext();
   
   const [tabValue, setTabValue] = useState(0); 
   const [formData, setFormData] = useState({
@@ -125,14 +110,12 @@ function AuthPage({ onRegisterSuccess, onLoginSuccess }) {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(""); // 存放具体的错误提示
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
-    setErrors({});
-    setSubmitStatus(null);
+    setErrorMessage("");
   };
 
   const handleChange = (e) => {
@@ -140,23 +123,54 @@ function AuthPage({ onRegisterSuccess, onLoginSuccess }) {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // 2. 核心逻辑：对接 Supabase 认证
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setSubmitStatus(null);
+    setErrorMessage("");
 
     try {
-      // 此处对接你的后端 API
-      await new Promise((resolve) => setTimeout(resolve, 1500)); 
-      setSubmitStatus('success');
+      if (tabValue === 0) {
+        // --- 执行登录 ---
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
+        });
+        
+        if (error) throw error;
+        
+        // 成功后回调 App.jsx
+        if (onLoginSuccess) onLoginSuccess(data.user);
 
-      if (tabValue === 1 && onRegisterSuccess) {
-        onRegisterSuccess(formData);
-      } else if (tabValue === 0 && onLoginSuccess) {
-        onLoginSuccess(formData);
+      } else {
+        // --- 执行注册 ---
+        // 简单校验两次密码
+        if (formData.password !== formData.confirmPassword) {
+          throw new Error(t.passwordMismatch || "Passwords do not match");
+        }
+
+        const { data, error } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: {
+              full_name: formData.name, // 将姓名存入用户元数据
+            }
+          }
+        });
+
+        if (error) throw error;
+
+        // 注意：Supabase 默认需要邮箱验证。如果没关验证，data.user 虽然有，但 session 会是 null
+        if (data.user && !data.session) {
+          alert(t.checkEmailForVerify || "Registration successful! Please check your email for the verification link.");
+        } else if (onRegisterSuccess) {
+          onRegisterSuccess(data.user);
+        }
       }
     } catch (error) {
-      setSubmitStatus('error');
+      // 捕获并显示 Supabase 返回的错误信息
+      setErrorMessage(error.message);
     } finally {
       setLoading(false);
     }
@@ -174,7 +188,6 @@ function AuthPage({ onRegisterSuccess, onLoginSuccess }) {
     >
       <Box sx={{ display: "flex", width: "100%", height: "calc(100vh - 64px)", overflow: "hidden" }}>
         
-        {/* 左侧：验证面板 */}
         <Box
           sx={{
             width: { xs: '100%', md: '50%' },
@@ -211,9 +224,10 @@ function AuthPage({ onRegisterSuccess, onLoginSuccess }) {
               <Tab label={t.register} sx={{ textTransform: 'none', fontWeight: 500 }} />
             </Tabs>
 
-            {submitStatus === 'success' && (
-              <Alert severity="success" sx={{ mb: 3, borderRadius: '8px' }}>
-                {tabValue === 0 ? t.loginSuccessful : t.registrationSuccessful}
+            {/* 显示错误信息 */}
+            {errorMessage && (
+              <Alert severity="error" sx={{ mb: 3, borderRadius: '8px' }}>
+                {errorMessage}
               </Alert>
             )}
 
@@ -226,6 +240,7 @@ function AuthPage({ onRegisterSuccess, onLoginSuccess }) {
                     placeholder={t.namePlaceholder}
                     value={formData.name}
                     onChange={handleChange}
+                    required
                     fullWidth
                     InputProps={{
                       startAdornment: (<InputAdornment position="start"><User size={18} strokeWidth={1.5} /></InputAdornment>),
@@ -237,9 +252,11 @@ function AuthPage({ onRegisterSuccess, onLoginSuccess }) {
                 <TextField
                   name="email"
                   label={t.email}
+                  type="email"
                   placeholder={t.emailPlaceholder}
                   value={formData.email}
                   onChange={handleChange}
+                  required
                   fullWidth
                   InputProps={{
                     startAdornment: (<InputAdornment position="start"><Mail size={18} strokeWidth={1.5} /></InputAdornment>),
@@ -254,6 +271,7 @@ function AuthPage({ onRegisterSuccess, onLoginSuccess }) {
                   placeholder={t.passwordPlaceholder}
                   value={formData.password}
                   onChange={handleChange}
+                  required
                   fullWidth
                   InputProps={{
                     startAdornment: (<InputAdornment position="start"><Lock size={18} strokeWidth={1.5} /></InputAdornment>),
@@ -276,6 +294,7 @@ function AuthPage({ onRegisterSuccess, onLoginSuccess }) {
                     placeholder={t.passwordPlaceholder}
                     value={formData.confirmPassword}
                     onChange={handleChange}
+                    required
                     fullWidth
                     InputProps={{
                       startAdornment: (<InputAdornment position="start"><Lock size={18} strokeWidth={1.5} /></InputAdornment>),
@@ -312,14 +331,13 @@ function AuthPage({ onRegisterSuccess, onLoginSuccess }) {
                 </Button>
                 
                 <Typography variant="caption" color="text.secondary" textAlign="center" sx={{ mt: 1 }}>
-                  {t.agreeTerms}
+                  {t.agreeTerms || "By clicking, you agree to our Terms and Conditions."}
                 </Typography>
               </Stack>
             </form>
           </Box>
         </Box>
 
-        {/* 右侧：背景面板 */}
         <AiBackgroundPanel t={t} />
       </Box>
     </Box>

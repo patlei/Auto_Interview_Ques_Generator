@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Box } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, CircularProgress } from '@mui/material';
+import { supabase } from './supabaseClient'; // 确保你已经创建了这个文件
 
 import Navbar from './components/Navbar';
 import AuthPage from './components/AuthPage';
@@ -9,28 +10,60 @@ import { useLanguageContext } from './contexts/LanguageContext';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userData, setUserData] = useState(null);
+  const [user, setUser] = useState(null);
+  const [loadingSession, setLoadingSession] = useState(true); // 初始化加载状态
+  
+  // 业务状态
   const [resume, setResume] = useState(null);
   const [jd, setJd] = useState('');
   const [interviewer, setInterviewer] = useState('');
   const [questions, setQuestions] = useState([]);
   const [matchReport, setMatchReport] = useState(null);
   const [loading, setLoading] = useState(false);
-  const { t } = useLanguageContext();
+  
+  const { t, isEnglish } = useLanguageContext();
 
-  const handleLoginSuccess = (data) => {
-    setUserData(data);
+  // --- 核心：监听 Supabase 身份验证状态 ---
+  useEffect(() => {
+    // 1. 初始化时检查当前是否有活动的会话
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setUser(session.user);
+        setIsAuthenticated(true);
+      }
+      setLoadingSession(false);
+    };
+
+    checkSession();
+
+    // 2. 监听登录、登出、Token 刷新等状态变化
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setUser(session.user);
+        setIsAuthenticated(true);
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLoginSuccess = (userData) => {
+    setUser(userData);
     setIsAuthenticated(true);
   };
 
-  const handleRegisterSuccess = (data) => {
-    setUserData(data);
+  const handleRegisterSuccess = (userData) => {
+    setUser(userData);
     setIsAuthenticated(true);
   };
 
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    setUserData(null);
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    // 清除业务状态
     setResume(null);
     setJd('');
     setInterviewer('');
@@ -50,17 +83,14 @@ function App() {
     if (fileInput) fileInput.value = '';
   };
 
-  // --- 增强版解析逻辑：解决 AI 返回 Markdown 标签导致的解析失败 ---
   const safeParse = (data) => {
     if (!data) return null;
     if (typeof data === 'object') return data;
-    
     try {
-      // 移除可能存在的 Markdown 代码块标签
       const cleanJson = data.replace(/```json|```/g, '').trim();
       return JSON.parse(cleanJson);
     } catch (e) {
-      console.error('Parse Error:', e, 'Raw data:', data);
+      console.error('Parse Error:', e);
       return null;
     }
   };
@@ -72,11 +102,9 @@ function App() {
     }
 
     setLoading(true);
-    // 注意：不要在这里清空上一次的结果，保持界面稳定直到新结果出来
     
     try {
       const formData = new FormData();
-      // 这里确保 key 名与后端 FastAPI 接收的一致（cv / jd / interviewer_info）
       formData.append('cv', resume);
       formData.append('jd', jd);
       formData.append('interviewer_info', interviewer);
@@ -89,14 +117,10 @@ function App() {
       if (!res.ok) throw new Error('Backend server error');
 
       const data = await res.json();
-      console.log('Backend Response:', data);
-
-      // 解析 questions
+      
       const parsedQuestions = safeParse(data.questions);
-      // 解析 match_report
       const parsedReport = safeParse(data.match_report);
 
-      // 更新状态：确保 questions 永远是数组
       setQuestions(Array.isArray(parsedQuestions) ? parsedQuestions : []);
       setMatchReport(parsedReport);
 
@@ -108,23 +132,15 @@ function App() {
     }
   };
 
-  // 1. 未登录界面
-  if (!isAuthenticated) {
+  // 如果还在检查 Session 状态，显示加载圈
+  if (loadingSession) {
     return (
-      <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-        <Navbar 
-          isAuthenticated={isAuthenticated} 
-          onLogout={handleLogout} 
-        />
-        <AuthPage
-          onLoginSuccess={handleLoginSuccess}
-          onRegisterSuccess={handleRegisterSuccess}
-        />
+      <Box sx={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
+        <CircularProgress size={40} thickness={4} color="inherit" />
       </Box>
     );
   }
 
-  // 2. 登录后的主界面 (Dashboard)
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       <Navbar
@@ -132,34 +148,42 @@ function App() {
         onLogout={handleLogout}
         onDashboard={() => {}} 
       />
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'row',
-          height: 'calc(100vh - 64px)', // 减去 Navbar 高度
-          width: '100vw',
-          overflow: 'hidden',
-          pt: '64px', // 顶部对齐
-        }}
-      >
-        <InputPanel
-          resume={resume}
-          handleUpload={handleUpload}
-          handleRemoveFile={handleRemoveFile}
-          jd={jd}
-          setJd={setJd}
-          interviewer={interviewer}
-          setInterviewer={setInterviewer}
-          handleGenerate={handleGenerate}
-          loading={loading}
+      
+      {!isAuthenticated ? (
+        <AuthPage
+          onLoginSuccess={handleLoginSuccess}
+          onRegisterSuccess={handleRegisterSuccess}
         />
+      ) : (
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'row',
+            height: 'calc(100vh - 64px)',
+            width: '100vw',
+            overflow: 'hidden',
+            pt: '64px',
+          }}
+        >
+          <InputPanel
+            resume={resume}
+            handleUpload={handleUpload}
+            handleRemoveFile={handleRemoveFile}
+            jd={jd}
+            setJd={setJd}
+            interviewer={interviewer}
+            setInterviewer={setInterviewer}
+            handleGenerate={handleGenerate}
+            loading={loading}
+          />
 
-        <ResultPanel
-          questions={questions}
-          matchReport={matchReport}
-          loading={loading}
-        />
-      </Box>
+          <ResultPanel
+            questions={questions}
+            matchReport={matchReport}
+            loading={loading}
+          />
+        </Box>
+      )}
     </Box>
   );
 }
