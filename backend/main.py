@@ -5,6 +5,7 @@ from deepseek import call_deepseek
 from resume_parser import extract_cv_text
 import json
 import re
+import os
 
 app = FastAPI()
 
@@ -18,7 +19,7 @@ origins = [
 # CORS Configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,             # 允许跨域的列表
+    allow_origins=["*"],             # 允许跨域的列表
     allow_credentials=True,
     allow_methods=["*"],               # 允许所有 HTTP 方法 (GET, POST 等)
     allow_headers=["*"],               # 允许所有请求头
@@ -148,5 +149,5 @@ async def generate_questions(
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get("PORT", 8000))
+    port = int(os.environ.get("PORT", 8080))
     uvicorn.run("main:app", host="0.0.0.0", port=port)
