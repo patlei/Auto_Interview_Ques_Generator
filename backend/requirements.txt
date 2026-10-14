@@ -6,4 +6,4 @@ python-docx
 python-multipart
 pydantic
 requests
-dotenv
+python-dotenv

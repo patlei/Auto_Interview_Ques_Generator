@@ -9,6 +9,8 @@ import ResultPanel from './components/ResultPanel';
 import Dashboard from './components/Dashboard'; // 确保你已经创建了这个文件
 import { useLanguageContext } from './contexts/LanguageContext';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
@@ -120,8 +122,7 @@ function App() {
       formData.append('jd', jd);
       formData.append('interviewer_info', interviewer);
       
-      //uodated backend URL
-      const res = await fetch('https://joyful-renewal-production-2d81.up.railway.app/generate_questions', {
+      const res = await fetch(`${API_BASE_URL}/generate_questions`, {
         method: 'POST',
         body: formData,
       });
