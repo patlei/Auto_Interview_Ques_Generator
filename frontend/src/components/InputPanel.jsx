@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   Box,
   Typography,
@@ -9,9 +9,42 @@ import {
   TextField,
   CircularProgress,
   useTheme,
-} from "@mui/material";
-import { Sparkles, UploadCloud, FileText, Trash2 } from 'lucide-react';
-import { useLanguageContext } from "../contexts/LanguageContext";
+} from '@mui/material';
+import { UploadCloud, FileText, Trash2, WandSparkles } from 'lucide-react';
+import { useLanguageContext } from '../contexts/LanguageContext';
+
+function StepHeading({ number, title, optional }) {
+  const { isEnglish } = useLanguageContext();
+
+  return (
+    <Stack direction="row" alignItems="center" spacing={1.25} sx={{ mb: 1.5 }}>
+      <Box
+        sx={{
+          width: 26,
+          height: 26,
+          display: 'grid',
+          placeItems: 'center',
+          borderRadius: '8px',
+          bgcolor: 'primary.main',
+          color: 'primary.contrastText',
+          fontSize: '0.75rem',
+          fontWeight: 750,
+          flexShrink: 0,
+        }}
+      >
+        {number}
+      </Box>
+      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.primary' }}>
+        {title}
+      </Typography>
+      {optional && (
+        <Typography variant="caption" color="text.secondary">
+          {isEnglish ? 'Optional' : '可选'}
+        </Typography>
+      )}
+    </Stack>
+  );
+}
 
 function InputPanel({
   resume,
@@ -24,184 +57,170 @@ function InputPanel({
   handleGenerate,
   loading,
 }) {
-  const { t } = useLanguageContext();
+  const { t, isEnglish } = useLanguageContext();
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
 
-  // 统一样式：输入框背景色和圆角
-  const textFieldStyle = {
-    "& .MuiOutlinedInput-root": {
-      borderRadius: 3,
-      bgcolor: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.01)",
-      fontSize: '0.9rem',
-      "& fieldset": {
-        borderColor: "divider",
-      },
-    },
+  const submitForm = (event) => {
+    event.preventDefault();
+    handleGenerate();
   };
 
   return (
     <Box
+      component="aside"
       sx={{
-        width: "35%",
-        minWidth: "400px",
-        height: "100%",
-        bgcolor: "background.paper", 
-        borderRight: `1px solid ${theme.palette.divider}`,
-        display: "flex",
-        flexDirection: "column",
-        p: 4,
-        overflowY: "auto",
-        zIndex: 2,
-        transition: 'all 0.3s ease',
+        width: { xs: '100%', md: 400, lg: 420 },
+        minWidth: { md: 400, lg: 420 },
+        height: { xs: 'auto', md: '100%' },
+        bgcolor: 'background.paper',
+        borderRight: { md: `1px solid ${theme.palette.divider}` },
+        borderBottom: { xs: `1px solid ${theme.palette.divider}`, md: 'none' },
+        display: 'flex',
+        flexDirection: 'column',
+        overflowY: { xs: 'visible', md: 'auto' },
       }}
     >
-      {/* Header */}
-      <Box sx={{ mb: 5, display: "flex", alignItems: "center", gap: 1.5 }}>
+      <Box
+        component="form"
+        onSubmit={submitForm}
+        sx={{
+          minHeight: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          p: { xs: 2.5, sm: 3, md: 3.5 },
+        }}
+      >
+        <Box sx={{ mb: 3.5 }}>
+          <Typography component="h1" variant="h5" sx={{ mb: 0.75 }}>
+            {isEnglish ? 'Create an interview plan' : '创建面试方案'}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {isEnglish
+              ? 'Add your resume and target role. AI will build a focused preparation plan.'
+              : '添加简历和目标岗位，AI 将生成针对性的面试准备方案。'}
+          </Typography>
+        </Box>
+
+        <Stack spacing={3.25}>
+          <Box>
+            <StepHeading number="1" title={isEnglish ? 'Upload resume' : '上传个人简历'} />
+            {!resume ? (
+              <Button
+                component="label"
+                variant="outlined"
+                fullWidth
+                sx={{
+                  minHeight: 112,
+                  borderStyle: 'dashed',
+                  borderWidth: 1.5,
+                  borderColor: 'divider',
+                  bgcolor: isDark ? 'rgba(255,255,255,0.02)' : '#F8FAFC',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  color: 'text.secondary',
+                  '&:hover': { borderStyle: 'dashed', borderColor: 'primary.main', bgcolor: isDark ? 'rgba(129,140,248,0.07)' : '#EEF2FF' },
+                }}
+              >
+                <UploadCloud size={24} strokeWidth={1.7} aria-hidden="true" />
+                <Typography variant="body2" sx={{ mt: 1, color: 'text.primary', fontWeight: 650 }}>
+                  {t.clickToUpload}
+                </Typography>
+                <Typography variant="caption" sx={{ mt: 0.25 }}>
+                  PDF、DOCX、DOC、TXT
+                </Typography>
+                <input id="resume-upload-input" type="file" hidden onChange={handleUpload} accept=".pdf,.docx,.doc,.txt" />
+              </Button>
+            ) : (
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 1.75,
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  bgcolor: isDark ? 'rgba(129,140,248,0.06)' : '#F8FAFC',
+                  borderColor: 'divider',
+                }}
+              >
+                <Box sx={{ width: 38, height: 38, display: 'grid', placeItems: 'center', borderRadius: '10px', bgcolor: isDark ? 'rgba(129,140,248,0.14)' : '#EEF2FF', color: 'primary.main', mr: 1.5, flexShrink: 0 }}>
+                  <FileText size={19} aria-hidden="true" />
+                </Box>
+                <Box sx={{ flexGrow: 1, minWidth: 0, mr: 1 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 650 }} noWrap title={resume.name}>
+                    {resume.name}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {(resume.size / 1024).toFixed(1)} KB
+                  </Typography>
+                </Box>
+                <IconButton
+                  size="small"
+                  onClick={handleRemoveFile}
+                  aria-label={isEnglish ? 'Remove resume' : '移除简历'}
+                  sx={{ color: 'error.main' }}
+                >
+                  <Trash2 size={17} />
+                </IconButton>
+              </Paper>
+            )}
+          </Box>
+
+          <Box>
+            <StepHeading number="2" title={isEnglish ? 'Job description' : '职位描述'} />
+            <TextField
+              aria-label={isEnglish ? 'Job description' : '职位描述'}
+              placeholder={t.jdPlaceholder}
+              fullWidth
+              multiline
+              minRows={5}
+              maxRows={9}
+              value={jd}
+              onChange={(event) => setJd(event.target.value)}
+              required
+              sx={{ '& .MuiInputBase-input': { fontSize: { xs: '1rem', sm: '0.9rem' }, lineHeight: 1.65 } }}
+            />
+          </Box>
+
+          <Box>
+            <StepHeading number="3" title={isEnglish ? 'Interviewer preference' : '面试官偏好'} optional />
+            <TextField
+              aria-label={isEnglish ? 'Interviewer preference' : '面试官偏好'}
+              placeholder={t.prefPlaceholder}
+              fullWidth
+              value={interviewer}
+              onChange={(event) => setInterviewer(event.target.value)}
+              sx={{ '& .MuiInputBase-input': { fontSize: { xs: '1rem', sm: '0.9rem' } } }}
+            />
+          </Box>
+        </Stack>
+
         <Box
           sx={{
-            bgcolor: "text.primary",
-            color: "background.paper",
-            p: 1,
-            borderRadius: 2,
-            display: "flex",
+            mt: 'auto',
+            pt: 3.5,
+            position: { md: 'sticky' },
+            bottom: 0,
+            bgcolor: 'background.paper',
           }}
         >
-          <Sparkles size={20} />
-        </Box>
-        <Box>
-          <Typography variant="h6" fontWeight="800" color="text.primary" sx={{ letterSpacing: '-0.5px' }}>
-            {t.brandName || "InteviewApe"}
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
-            AI-Powered Tool
+          <Button
+            type="submit"
+            variant="contained"
+            size="large"
+            fullWidth
+            disabled={loading}
+            startIcon={!loading ? <WandSparkles size={19} aria-hidden="true" /> : null}
+            sx={{ minHeight: 50, fontSize: '0.95rem' }}
+          >
+            {loading ? <CircularProgress size={22} color="inherit" /> : t.generateQuestions}
+          </Button>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center', mt: 1.25 }}>
+            {isEnglish ? 'Your files are used only for this analysis.' : '文件仅用于本次分析。'}
           </Typography>
         </Box>
       </Box>
-
-      {/* Form Inputs */}
-      <Stack spacing={4}>
-        {/* 1. Resume Upload */}
-        <Box>
-          <Typography variant="subtitle2" fontWeight="800" color="text.primary" sx={{ mb: 1.5, fontSize: '0.9rem' }}>
-            {t.step1 || "1. Upload Resume (Resume/CV)"}
-          </Typography>
-          {!resume ? (
-            <Button
-              component="label"
-              variant="outlined"
-              fullWidth
-              sx={{
-                height: 110,
-                borderStyle: "dashed",
-                borderWidth: 1.5,
-                borderColor: "divider",
-                bgcolor: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.02)",
-                borderRadius: 3,
-                display: "flex",
-                flexDirection: "column",
-                textTransform: "none",
-                "&:hover": {
-                  borderColor: "text.primary",
-                  bgcolor: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)",
-                },
-              }}
-            >
-              <UploadCloud size={24} strokeWidth={1.5} style={{ marginBottom: '8px', color: theme.palette.text.secondary }} />
-              <Typography variant="body2" color="text.secondary" fontWeight="500">
-                {t.clickToUpload}
-              </Typography>
-              <input type="file" hidden onChange={handleUpload} accept=".pdf,.docx,.doc,.txt" />
-            </Button>
-          ) : (
-            <Paper
-              variant="outlined"
-              sx={{
-                p: 2,
-                borderRadius: 3,
-                display: "flex",
-                alignItems: "center",
-                bgcolor: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.02)",
-                borderColor: "divider",
-              }}
-            >
-              <FileText size={20} style={{ marginRight: '12px' }} />
-              <Box sx={{ flexGrow: 1, overflow: "hidden", mr: 1 }}>
-                <Typography variant="subtitle2" fontWeight="700" noWrap>
-                  {resume.name}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {(resume.size / 1024).toFixed(1)} KB
-                </Typography>
-              </Box>
-              <IconButton size="small" onClick={handleRemoveFile} color="error">
-                <Trash2 size={16} />
-              </IconButton>
-            </Paper>
-          )}
-        </Box>
-
-        {/* 2. JD Input */}
-        <Box>
-          <Typography variant="subtitle2" fontWeight="800" color="text.primary" sx={{ mb: 1.5, fontSize: '0.9rem' }}>
-            {t.step2 || "2. Job Description (JD)"}
-          </Typography>
-          <TextField
-            placeholder={t.jdPlaceholder || "Paste the JD content here..."}
-            fullWidth
-            multiline
-            minRows={6}
-            maxRows={10}
-            value={jd}
-            onChange={(e) => setJd(e.target.value)}
-            sx={textFieldStyle}
-          />
-        </Box>
-
-        {/* 3. Interviewer Info */}
-        <Box>
-          <Typography variant="subtitle2" fontWeight="800" color="text.primary" sx={{ mb: 1.5, fontSize: '0.9rem' }}>
-            {t.step3 || "3. Interviewer Preferences (Optional)"}
-          </Typography>
-          <TextField
-            placeholder={t.prefPlaceholder || "E.g., CTO, focuses on system design"}
-            fullWidth
-            value={interviewer}
-            onChange={(e) => setInterviewer(e.target.value)}
-            sx={textFieldStyle}
-          />
-        </Box>
-
-        {/* Action Button */}
-        <Button
-          variant="contained"
-          size="large"
-          onClick={handleGenerate}
-          disabled={loading}
-          sx={{
-            py: 2,
-            borderRadius: 3,
-            fontWeight: "800",
-            fontSize: "1rem",
-            letterSpacing: '0.5px',
-            bgcolor: "text.primary",
-            color: "background.paper",
-            boxShadow: isDark ? 'none' : '0 10px 20px rgba(0,0,0,0.1)',
-            "&:hover": {
-              bgcolor: isDark ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.85)",
-              transform: 'translateY(-1px)',
-            },
-            transition: 'all 0.2s',
-            mt: 2,
-          }}
-        >
-          {loading ? (
-            <CircularProgress size={24} color="inherit" />
-          ) : (
-            `✨ ${t.generateQuestions || "GENERATE QUESTIONS"}`
-          )}
-        </Button>
-      </Stack>
     </Box>
   );
 }

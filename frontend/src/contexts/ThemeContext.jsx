@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useState, useContext, useMemo } from 'react';
 import { createTheme, ThemeProvider as MUIThemeProvider } from '@mui/material/styles';
 import { CssBaseline } from '@mui/material';
@@ -24,63 +25,105 @@ export const ThemeProvider = ({ children }) => {
       createTheme({
         palette: {
           mode,
-          // 采用 InteviewApe 的极简黑白灰风格
           primary: {
-            main: mode === 'light' ? '#000000' : '#ffffff', // 核心主色改为纯黑/纯白
-            contrastText: mode === 'light' ? '#ffffff' : '#000000',
+            main: mode === 'light' ? '#4F46E5' : '#818CF8',
+            dark: mode === 'light' ? '#4338CA' : '#6366F1',
+            light: mode === 'light' ? '#EEF2FF' : '#312E81',
+            contrastText: '#FFFFFF',
           },
+          secondary: {
+            main: mode === 'light' ? '#0F172A' : '#CBD5E1',
+          },
+          success: { main: mode === 'light' ? '#16A34A' : '#4ADE80' },
+          warning: { main: mode === 'light' ? '#D97706' : '#FBBF24' },
+          error: { main: mode === 'light' ? '#DC2626' : '#F87171' },
           background: {
-            // Light 模式下使用极浅的灰色 (#fafafa)，Dark 模式使用深黑 (#0a0a0a)
-            default: mode === 'light' ? '#fafafa' : '#0a0a0a',
-            paper: mode === 'light' ? '#ffffff' : '#141414',
+            default: mode === 'light' ? '#F8FAFC' : '#0B1120',
+            paper: mode === 'light' ? '#FFFFFF' : '#111827',
           },
           text: {
-            primary: mode === 'light' ? '#1a1a1a' : '#f5f5f5',
-            secondary: mode === 'light' ? '#666666' : '#a0a0a0',
+            primary: mode === 'light' ? '#0F172A' : '#F8FAFC',
+            secondary: mode === 'light' ? '#64748B' : '#A8B3C7',
           },
-          divider: mode === 'light' ? 'rgba(0, 0, 0, 0.06)' : 'rgba(255, 255, 255, 0.06)',
+          divider: mode === 'light' ? '#E2E8F0' : '#263247',
         },
         shape: {
-          borderRadius: 10, // 稍微软化一点圆角，更符合 Image 2 的风格
+          borderRadius: 10,
         },
         typography: {
-          // 使用更具现代感的系统字体族
           fontFamily: [
-            'Inter',
+            '"Plus Jakarta Sans"',
+            '"Noto Sans SC"',
             '-apple-system',
             'BlinkMacSystemFont',
             '"Segoe UI"',
-            'Roboto',
+            '"PingFang SC"',
+            '"Microsoft YaHei"',
             'sans-serif',
           ].join(','),
-          h4: { fontWeight: 700, letterSpacing: '-0.02em' },
-          h5: { fontWeight: 600, letterSpacing: '-0.01em' },
-          h6: { fontWeight: 600, letterSpacing: '-0.01em' },
-          button: { textTransform: 'none', fontWeight: 500 }, // 按钮不使用全大写
+          h3: { fontWeight: 700, letterSpacing: '-0.035em', lineHeight: 1.15 },
+          h4: { fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1.2 },
+          h5: { fontWeight: 700, letterSpacing: '-0.015em', lineHeight: 1.3 },
+          h6: { fontWeight: 650, letterSpacing: '-0.01em', lineHeight: 1.35 },
+          body1: { lineHeight: 1.65 },
+          body2: { lineHeight: 1.6 },
+          button: { textTransform: 'none', fontWeight: 650 },
         },
         components: {
           MuiCssBaseline: {
             styleOverrides: {
+              '*': { boxSizing: 'border-box' },
+              'html, body, #root': { minHeight: '100%' },
               body: {
-                transition: 'background-color 0.3s ease, color 0.3s ease',
+                minWidth: 320,
+                transition: 'background-color 200ms ease, color 200ms ease',
+                WebkitFontSmoothing: 'antialiased',
+              },
+              '::selection': {
+                backgroundColor: mode === 'light' ? '#C7D2FE' : '#3730A3',
+              },
+              '@media (prefers-reduced-motion: reduce)': {
+                '*, *::before, *::after': {
+                  animationDuration: '0.01ms !important',
+                  animationIterationCount: '1 !important',
+                  transitionDuration: '0.01ms !important',
+                  scrollBehavior: 'auto !important',
+                },
               },
             },
           },
           MuiButton: {
             styleOverrides: {
               root: {
-                borderRadius: '8px',
-                padding: '8px 16px',
-                boxShadow: 'none', // 默认去除所有按钮阴影
+                minHeight: 44,
+                borderRadius: '10px',
+                padding: '9px 16px',
+                boxShadow: 'none',
+                transition: 'background-color 180ms ease, border-color 180ms ease, color 180ms ease, box-shadow 180ms ease',
                 '&:hover': {
                   boxShadow: 'none',
                 },
+                '&.Mui-focusVisible': {
+                  boxShadow: `0 0 0 3px ${mode === 'light' ? 'rgba(79,70,229,0.24)' : 'rgba(129,140,248,0.32)'}`,
+                },
               },
               containedPrimary: {
-                backgroundColor: mode === 'light' ? '#000000' : '#ffffff',
-                color: mode === 'light' ? '#ffffff' : '#000000',
+                backgroundColor: mode === 'light' ? '#4F46E5' : '#6366F1',
+                color: '#FFFFFF',
                 '&:hover': {
-                  backgroundColor: mode === 'light' ? '#333333' : '#e0e0e0',
+                  backgroundColor: mode === 'light' ? '#4338CA' : '#4F46E5',
+                },
+              },
+            },
+          },
+          MuiIconButton: {
+            styleOverrides: {
+              root: {
+                width: 44,
+                height: 44,
+                borderRadius: '10px',
+                '&.Mui-focusVisible': {
+                  boxShadow: `0 0 0 3px ${mode === 'light' ? 'rgba(79,70,229,0.24)' : 'rgba(129,140,248,0.32)'}`,
                 },
               },
             },
@@ -88,13 +131,15 @@ export const ThemeProvider = ({ children }) => {
           MuiPaper: {
             styleOverrides: {
               root: {
-                backgroundImage: 'none', // 移除 MUI Dark mode 默认的叠加层样式
-                boxShadow: mode === 'light' 
-                  ? '0 1px 3px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.04)' 
-                  : 'none', // 极简投影
-                border: mode === 'light' 
-                  ? '1px solid rgba(0,0,0,0.06)' 
-                  : '1px solid rgba(255,255,255,0.06)',
+                backgroundImage: 'none',
+              },
+            },
+          },
+          MuiCard: {
+            styleOverrides: {
+              root: {
+                borderRadius: '14px',
+                boxShadow: mode === 'light' ? '0 1px 2px rgba(15, 23, 42, 0.04)' : 'none',
               },
             },
           },
@@ -102,14 +147,29 @@ export const ThemeProvider = ({ children }) => {
             styleOverrides: {
               root: {
                 '& .MuiOutlinedInput-root': {
+                  borderRadius: '10px',
+                  backgroundColor: mode === 'light' ? '#FFFFFF' : '#111827',
                   '& fieldset': {
-                    borderColor: mode === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)',
+                    borderColor: mode === 'light' ? '#CBD5E1' : '#334155',
                   },
                   '&:hover fieldset': {
-                    borderColor: mode === 'light' ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)',
+                    borderColor: mode === 'light' ? '#94A3B8' : '#64748B',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderWidth: 1.5,
                   },
                 },
               },
+            },
+          },
+          MuiDialog: {
+            styleOverrides: {
+              paper: { borderRadius: '16px' },
+            },
+          },
+          MuiTooltip: {
+            styleOverrides: {
+              tooltip: { borderRadius: '8px', fontSize: '0.75rem' },
             },
           },
         },
