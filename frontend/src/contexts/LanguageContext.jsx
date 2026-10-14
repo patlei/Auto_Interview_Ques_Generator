@@ -1,5 +1,5 @@
-import { CopyAll } from '@mui/icons-material';
-import React, { createContext, useState, useContext, useMemo } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import React, { createContext, useState, useContext } from 'react';
 
 const LanguageContext = createContext();
 
@@ -21,28 +21,28 @@ export const LanguageProvider = ({ children }) => {
 
   const translations = {
     en: {
-      brandName: 'InteviewApp',
+      brandName: 'InterviewMaster',
       login: 'Login',
       register: 'Register',
       email: 'Email',
       password: 'Password',
       confirmPassword: 'Confirm Password',
-      name: 'Full Name',
+      username: 'Username',
       emailPlaceholder: 'you@example.com',
       passwordPlaceholder: 'Enter your password',
-      namePlaceholder: 'Enter your name',
+      usernamePlaceholder: 'Enter your username',
       loginSubtitle: 'Sign in to manage your profile',
-      registerSubtitle: 'Join InteviewApe to power up your career',
+      registerSubtitle: 'Join InterviewMaster to prepare with confidence',
       agentDescription: 'Upload your CV and JD, and let AI generate precision interview kits in 10 seconds.',
       forgotPassword: 'Forgot Password?',
       or: 'OR',
       agreeTerms: 'By creating an account, you agree to our Terms of Service.',
-      copyright: '© 2026 InteviewApe. AI-Powered Resume Tool.',
+      copyright: '© 2026 InterviewMaster. AI-powered interview preparation.',
       chinese: 'Chinese',
       english: 'English',
       lightMode: 'Light',
       darkMode: 'Dark',
-      dashboard: 'Dashboard',
+      dashboard: 'My Reports',
       logout: 'Logout',
       CopyAll: "Copy All",
       exportMD: "Export Markdown",
@@ -55,6 +55,10 @@ export const LanguageProvider = ({ children }) => {
       questions: "Questions",
       interviewerIntent: "INTERVIEWER INTENT",
       suggestedAnswer: "SUGGESTED ANSWER",
+      readyToStart: "Ready to create your interview plan?",
+      fillLeftPanel: "Upload your resume and add the job description to get started.",
+      generateQuestions: "Generate interview plan",
+      clickToUpload: "Click to upload your resume",
       step1: "1. Upload Resume (Resume/CV)",
       step2: "2. Job Description (JD)",
       step3: "3. Interviewer Preferences (Optional)",
@@ -62,28 +66,28 @@ export const LanguageProvider = ({ children }) => {
       prefPlaceholder: "E.g., CTO, focuses on system design and scalability"
     },
     zh: {
-      brandName: 'InteviewApp',
+      brandName: 'InterviewMaster',
       login: '登录',
       register: '注册',
       email: '邮箱',
       password: '密码',
       confirmPassword: '确认密码',
-      name: '姓名',
+      username: '用户名',
       emailPlaceholder: 'you@example.com',
       passwordPlaceholder: '请输入密码',
-      namePlaceholder: '请输入姓名',
+      usernamePlaceholder: '请输入用户名',
       loginSubtitle: '登录后管理你的主页',
-      registerSubtitle: '加入 InteviewApp，开启 AI 面试之旅',
+      registerSubtitle: '加入 InterviewMaster，更有把握地准备每场面试',
       agentDescription: '上传你的简历，AI 10 秒内自动生成精准的个性化面试题。',
       forgotPassword: '忘记密码？',
       or: '或',
       agreeTerms: '创建账户即表示您同意我们的服务条款。',
-      copyright: '© 2026 InteviewApp. AI 驱动的简历转换工具。',
+      copyright: '© 2026 InterviewMaster. AI 驱动的面试准备工具。',
       chinese: '中文',
       english: '英文',
       lightMode: '浅色',
       darkMode: '深色',
-      dashboard: '控制台',
+      dashboard: '我的报告',
       logout: '退出登录',
       // ... 其他词条
       CopyAll: "复制全部",
@@ -97,6 +101,10 @@ export const LanguageProvider = ({ children }) => {
       questions: "道题目",
       interviewerIntent: "考察意图",
       suggestedAnswer: "参考答案建议",
+      readyToStart: "准备好生成专属面试方案了吗？",
+      fillLeftPanel: "上传简历并填写职位描述，即可开始分析。",
+      generateQuestions: "生成面试方案",
+      clickToUpload: "点击上传你的简历",
       step1: "1. 上传个人简历 (Resume/CV)",
       step2: "2. 职位描述 (JD)",
       step3: "3. 面试官偏好 (可选)",
@@ -105,7 +113,7 @@ export const LanguageProvider = ({ children }) => {
     },
   };
 
-  const t = useMemo(() => translations[language], [language]);
+  const t = translations[language];
 
   const value = {
     language,

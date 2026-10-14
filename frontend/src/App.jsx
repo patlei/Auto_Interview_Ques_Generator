@@ -13,7 +13,6 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState(null);
   const [loadingSession, setLoadingSession] = useState(true); 
   
   // --- 核心：控制当前显示的页面 ---
@@ -40,7 +39,6 @@ function App() {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        setUser(session.user);
         setIsAuthenticated(true);
       }
       setLoadingSession(false);
@@ -50,10 +48,8 @@ function App() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
-        setUser(session.user);
         setIsAuthenticated(true);
       } else {
-        setUser(null);
         setIsAuthenticated(false);
         setCurrentView('main'); // 登出时重置视图
       }
@@ -62,8 +58,7 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleLoginSuccess = (userData) => {
-    setUser(userData);
+  const handleLoginSuccess = () => {
     setIsAuthenticated(true);
   };
 
@@ -155,7 +150,7 @@ function App() {
   }
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+    <Box sx={{ minHeight: '100dvh', bgcolor: 'background.default' }}>
       <Navbar
         isAuthenticated={isAuthenticated}
         onLogout={handleLogout}
@@ -171,11 +166,19 @@ function App() {
           onRegisterSuccess={handleLoginSuccess}
         />
       ) : (
-        <Box sx={{ pt: '64px', height: '100vh' }}>
+        <Box component="main" sx={{ pt: { xs: '60px', sm: '64px' }, minHeight: '100dvh' }}>
           
           {/* 1. 分析模式 (Main)：左侧输入 + 右侧即时结果 */}
           {currentView === 'main' && (
-            <Box sx={{ display: 'flex', flexDirection: 'row', height: '100%', overflow: 'hidden' }}>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: { xs: 'column', md: 'row' },
+                minHeight: { xs: 'calc(100dvh - 60px)', sm: 'calc(100dvh - 64px)' },
+                height: { xs: 'auto', md: 'calc(100dvh - 64px)' },
+                overflow: { xs: 'visible', md: 'hidden' },
+              }}
+            >
               <InputPanel
                 resume={resume}
                 handleUpload={handleUpload}
@@ -197,12 +200,15 @@ function App() {
 
           {/* 2. 控制台列表模式 (Dashboard) */}
           {currentView === 'dashboard' && (
-            <Dashboard onSelectReport={handleSelectHistoryReport} />
+            <Dashboard
+              onSelectReport={handleSelectHistoryReport}
+              onCreateReport={() => setCurrentView('main')}
+            />
           )}
 
           {/* 3. 独立查看模式 (View)：全屏展示历史内容，不显示左侧 InputPanel */}
           {currentView === 'view' && selectedReport && (
-            <Box sx={{ height: '100%', overflow: 'hidden' }}>
+            <Box sx={{ height: { xs: 'auto', md: 'calc(100dvh - 64px)' }, overflow: { xs: 'visible', md: 'hidden' } }}>
               <ResultPanel
                 questions={selectedReport.questions}
                 matchReport={selectedReport.match_report}
